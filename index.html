@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset='utf-8' />
+    <title></title>
+    <meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no' />
+    <script src='https://api.tiles.mapbox.com/mapbox-gl-js/v0.47.0/mapbox-gl.js'></script>
+    <link href='https://api.tiles.mapbox.com/mapbox-gl-js/v0.47.0/mapbox-gl.css' rel='stylesheet' />
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+      }
+
+      #map {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        width: 100%;
+      }
+    </style>
+</head>
+<body>
+  <div id='map'></div>
+  <script>
+    mapboxgl.accessToken = 'pk.eyJ1IjoiZGFuYWZhbGxvbiIsImEiOiJjamwxZmRqcG0xZjM4M2ttcDlnZXJsdjRlIn0.EvuZom81LiepX3v0vaOX6w';
+    const map = new mapboxgl.Map({
+      container: 'map',
+      style: 'mapbox://styles/mapbox/light-v9',
+      center: [-90, 40],
+      zoom: 3
+    });
+
+   map.on('load', function() {
+
+    // source the data
+    map.addSource('places', {
+      type: 'geojson',
+      data: {
+        'id': 'region.3591',
+        'type': 'Feature',
+        'place_type': ['region'],
+        'relevance': 1,
+        'properties': {
+          'short_code': 'US-CA',
+          'wikidata': 'Q99',
+          'place_name': 'California, United States',
+          'total_mentions': 23,
+          'num_songs': 3,
+          'songs': [
+            {
+              'description': 'California - Joni Mitchell (1971)',
+              'num_mentions': 9,
+            },
+            {
+              'description': 'California - Grimes (2015)',
+              'num_mentions': 6,
+            },
+            {
+              'description': 'California Dreamin\' - The Mamas & The Papas (1966)',
+              'num_mentions': 8,
+            },
+          ]
+        },
+        'text': 'California',
+        'place_name': 'California, United States',
+        'bbox': [-124.581979, 32.454411, -114.131211, 42.009517],
+        'center': [-120.047533, 37.229564],
+        'geometry': {'type': 'Point', 'coordinates': [-120.047533, 37.229564]},
+        'context': [{'id': 'country.3145',
+          'short_code': 'us',
+          'wikidata': 'Q30',
+          'text': 'United States'}]
+      }
+    });
+
+    // add heatmap layer
+    map.addLayer({
+      id: 'places-heat',
+      type: 'heatmap',
+      source: 'places',
+      maxzoom: 15,
+      paint: {
+        // increase weight as number of songs increases
+        'heatmap-weight': {
+          property: 'num_songs',
+          type: 'exponential',
+          stops: [
+            [1, 0],
+            [62, 1]
+          ]
+        },
+        // increase intensity as zoom level increases
+        'heatmap-intensity': {
+          default: 3,
+          stops: [
+            [10, 5],
+            [15, 8]
+          ]
+        },
+        // increase radius as zoom increases
+        'heatmap-radius': {
+          stops: [
+            [5, 15],
+            [10, 20]
+          ]
+        },
+      }
+    }, 'waterway-label');
+
+    // add circle layer
+    map.addLayer({
+      id: 'places-point',
+      type: 'circle',
+      source: 'places',
+      // minzoom: 5,
+      paint: {
+        // increase the radius of the circle as the zoom level and number of songs increases
+        'circle-radius': {
+          property: 'num_songs',
+          type: 'exponential',
+          default: 5,
+          stops: [
+            [{ zoom: 10, value: 1 }, 10],
+            [{ zoom: 10, value: 10 }, 15],
+            [{ zoom: 15, value: 1 }, 30],
+            [{ zoom: 15, value: 10 }, 50],
+          ]
+        },
+        'circle-color': {
+          property: 'num_songs',
+          type: 'exponential',
+          stops: [
+            [0, 'rgba(236,222,239,0)'],
+            [10, 'rgb(236,222,239)'],
+            [20, 'rgb(208,209,230)'],
+            [30, 'rgb(166,189,219)'],
+            [40, 'rgb(103,169,207)'],
+            [50, 'rgb(28,144,153)'],
+            [60, 'rgb(1,108,89)']
+          ]
+        },
+        'circle-stroke-color': 'white',
+        'circle-stroke-width': 1,
+        'circle-opacity': {
+          stops: [
+            [14, 0],
+            [15, 1]
+          ]
+        }
+      }
+    }, 'waterway-label');
+
+    // add tooltips
+    map.on('click', 'places-point', function(e) {
+      const feature = e.features[0];
+      let tooltipContent = '<b>' + feature.properties.place_name + '</b>';
+      const songs = JSON.parse(feature.properties.songs);
+      songs.forEach((song) => {
+        tooltipContent += '<br>' + song.description + ' - ' + song.num_mentions + 'mentions' ;
+      });
+      new mapboxgl.Popup()
+        .setLngLat(feature.geometry.coordinates)
+        .setHTML(tooltipContent)
+        .addTo(map);
+    });
+  });
+
+  </script>
+</body>
+</html>
